@@ -1,5 +1,5 @@
 // src/pages/ForgotPassword.jsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import InputField from "../components/InputField";
 import Button from "../components/Button";
@@ -18,7 +18,9 @@ const ForgotPassword = () => {
   
   
   // console.log("Token:", token);     
-  console.log("Email");
+  useEffect(() =>{
+    console.log("Email");
+  }, [email])
 
   // Basic email validation
   const validateEmail = (email) => {
@@ -27,30 +29,30 @@ const ForgotPassword = () => {
   };
 
   // Mock API function (replace with real endpoint)
-  const mockRequestReset = async (email) => {
-    await new Promise(resolve => setTimeout(resolve, 1500));
+  // const mockRequestReset = async (email) => {
+  //   // await new Promise(resolve => setTimeout(resolve, 1500));
     
-    // Simulate rate limiting after 3 requests
-    if (requestCount >= 2) {
-      return {
-        ok: false,
-        status: 429,
-        json: async () => ({
-          message: "Too many requests. Please try again in 15 minutes.",
-          retryAfter: 900 // seconds
-        })
-      };
-    }
+  //   // Simulate rate limiting after 3 requests
+  //   if (requestCount >= 2) {
+  //     return {
+  //       ok: false,
+  //       status: 429,
+  //       json: async () => ({
+  //         message: "Too many requests. Please try again in 15 minutes.",
+  //         retryAfter: 900 // seconds
+  //       })
+  //     };
+  //   }
     
-    // Always return success for security (even if email doesn't exist)
-    return {
-      ok: true,
-      json: async () => ({
-        message: "If an account exists, reset instructions have been sent.",
-        cooldown: 120 // seconds until next request allowed
-      })
-    };
-  };
+  //   // Always return success for security (even if email doesn't exist)
+  //   return {
+  //     ok: true,
+  //     json: async () => ({
+  //       message: "If an account exists, reset instructions have been sent.",
+  //       cooldown: 120 // seconds until next request allowed
+  //     })
+  //   };
+  // };
 
   // Real API call (when ready)
   const realAPICall = async (email) => {
@@ -86,8 +88,8 @@ const ForgotPassword = () => {
       setRequestCount(prev => prev + 1);
       
       // Use mock for now
-      const response = await mockRequestReset(email);
-      // const response = await realAPICall(email); // Switch to this later
+      // const response = await mockRequestReset(email);
+      const response = await realAPICall(email); // Switch to this later
       
       const data = await response.json();
 
@@ -102,9 +104,9 @@ const ForgotPassword = () => {
         setEmail("");
         
         // Auto-redirect to login after 5 seconds
-        setTimeout(() => {
-          navigate("/signin");
-        }, 10000);
+        // setTimeout(() => {
+        //   navigate("/signin");
+        // }, 10000);
         
       } else {
         // Handle errors
@@ -154,7 +156,7 @@ const ForgotPassword = () => {
       />
 
       <header className="w-full bg-black text-white text-center py-4 rounded-b-2xl">
-        <h1 className="text-2xl font-bold">IntelliQue.</h1>
+        <h1 className="text-2xl font-bold">Intellique.</h1>
       </header>
 
       <div className="w-11/12 max-w-md mt-8">

@@ -279,7 +279,7 @@ const ResetPassword = () => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-between bg-white">
         <header className="w-full bg-black text-white text-center py-4 rounded-b-2xl">
-          <h1 className="text-2xl font-bold">IntelliQue.</h1>
+          <h1 className="text-2xl font-bold">Intellique.</h1>
         </header>
 
         <div className="w-11/12 max-w-md mt-8">
@@ -339,7 +339,7 @@ const ResetPassword = () => {
       />
 
       <header className="w-full bg-black text-white text-center py-4 rounded-b-2xl">
-        <h1 className="text-2xl font-bold">IntelliQue.</h1>
+        <h1 className="text-2xl font-bold">Intellique.</h1>
       </header>
 
       <div className="w-11/12 max-w-md mt-8">
@@ -352,7 +352,7 @@ const ResetPassword = () => {
           </h2>
           
           <p className="text-gray-600 mb-6">
-            Create a new strong password for your IntelliQue account.
+            Create a new strong password for your Intellique account.
           </p>
           
           <div className="space-y-6">
