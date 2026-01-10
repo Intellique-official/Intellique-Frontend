@@ -38,94 +38,7 @@ const SignIn = () => {
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: "" }));
     }
-  };
-
-  // === MOCK API FUNCTION (Replace with real fetch later) ===
-  const mockSignInAPI = async (formData) => {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Test cases - Change these to test different scenarios
-    const testCase = "invalid_credentials"; // Change to test different responses
-    
-    switch(testCase) {
-      case "success":
-        return {
-          ok: true,
-          json: async () => ({
-            token: "mock-jwt-token-12345",
-            user: {
-              id: 1,
-              email: formData.email,
-              name: "Test User"
-            }
-          })
-        };
-        
-      case "invalid_credentials":
-        return {
-          ok: false,
-          status: 401,
-          json: async () => ({
-            message: "Invalid credentials",
-            code: "AUTH_001"
-          })
-        };
-        
-      case "account_not_verified":
-        return {
-          ok: false,
-          status: 403,
-          json: async () => ({
-            message: "Please verify your email address",
-            code: "AUTH_002",
-            requiresVerification: true
-          })
-        };
-        
-      case "account_locked":
-        return {
-          ok: false,
-          status: 423,
-          json: async () => ({
-            message: "Account temporarily locked. Try again later.",
-            code: "AUTH_003"
-          })
-        };
-        
-      case "server_error":
-        return {
-          ok: false,
-          status: 500,
-          json: async () => ({
-            message: "Internal server error",
-            code: "SERVER_001"
-          })
-        };
-        
-      case "validation_error":
-        return {
-          ok: false,
-          status: 400,
-          json: async () => ({
-            message: "Validation failed",
-            errors: {
-              email: ["Invalid email format"],
-              password: ["Password is required"]
-            }
-          })
-        };
-        
-      default:
-        return {
-          ok: true,
-          json: async () => ({
-            token: "mock-jwt-token-default",
-            user: { id: 1, email: formData.email }
-          })
-        };
-    }
-  };
+  }
 
 
   // Handle form submission
@@ -148,8 +61,7 @@ const SignIn = () => {
     try {
       setLoading(true);
       
-      // === USE MOCK FOR NOW, REPLACE WITH realAPICall LATER ===
-      fetch("/api/auth/signin", {
+      fetch(`${import.meta.env.BASE_URL}/api/auth/signin`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
