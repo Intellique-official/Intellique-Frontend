@@ -4,6 +4,7 @@ import InputField from "../components/InputField";
 import Button from "../components/Button";
 import Footer from "../components/Footer";
 import Notification from "../components/Notification";
+import axios from "../api/axios"
 
 const SignUp = () => {
   const navigate = useNavigate()  
@@ -33,10 +34,22 @@ const SignUp = () => {
     }
     if (name === "password") {
       if (!value) error = "Password is required.";
-      else if (value.length < 6)
-        error = "Password must be at least 6 characters.";
+      else if (value.length < 8)
+        error = "Password must be at least 8 characters long."
+      else if(!/[a-z]/.test(value) || !/[A-Z]/.test(value) || !/\d/.test(value) || !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value)){
+        error = "password must contain at least one uppercase letter, one lowercase letter, one number, and one symbol."
+      }
     }
-    if (name === "repeatPassword") {
+   
+    if (
+        name === "repeatPassword" &&
+        formData.password &&
+        !formData.password.length < 8 &&
+        /[a-z]/.test(formData.password) &&
+        /[A-Z]/.test(formData.password) &&
+        /\d/.test(formData.password) &&
+        /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password)
+      ) {
       if (!value) error = "Please confirm your password.";
       else if (value !== formData.password)
         error = "Passwords do not match.";
@@ -75,50 +88,38 @@ const SignUp = () => {
       });
       return;
     }
-
+    const signUpData = {
+      username: formData.username,
+      email: formData.email,
+      password: formData.password
+    }
     // Prepare API request
     try {
       setLoading(true);
       setNotification({ message: "", type: "" });
+      
+      const response = await axios.post("/user/new", signUpData , {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
-      // Simulated API call (replace with your real endpoint)
-      const response = await fakeSignUpAPI(formData);
-
-      if (response.success) {
-        setNotification({
-          message: "Signup successful! Redirecting...",
-          type: "success",
+      setNotification({
+        message: "Signup successful! Redirecting...",
+        type: "success",
+      });
+      console.log("formData :", signUpData)
+      console.log(response.data)
+      setFormData({
+          username: "",
+          email: "",
+          password: "",
+          repeatPassword: "",
         });
-        console.log("formData :", formData)
-        setTimeout(() => {
-            navigate("/signin"); // redirect to Sign In page
-        }, 2000);
-        // setTimeout(() => {
-        //   setFormData({
-        //     username: "",
-        //     email: "",
-        //     password: "",
-        //     repeatPassword: "",
-        //   });
-        //   setErrors({});
-        // }, 2000);
-      } else {
-        // Backend returned an error object with a type
-        // if (response.error.type === "email") {
-        //   setErrors((prev) => ({
-        //     ...prev,
-        //     email: response.error.message,
-        //   }));
-        // } else {
-          setNotification({
-            message: response.error.message || "Signup failed.",
-            type: "error",
-          });
-        // }
-      }
+        setErrors({})
     } catch (err) {
       setNotification({
-        message: "Server error. Please try again later.",
+        message: err?.data || "Server error. Please try again later.",
         type: "error",
       });
       console.log(err)
@@ -127,27 +128,6 @@ const SignUp = () => {
     }
   };
 
-  // --- Simulated Backend API Function ---
-  const fakeSignUpAPI = (data) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // Demo: pretend "intellique@gmail.com" already exists
-        if (data.email.toLowerCase() === "intellique@gmail.com") {
-          resolve({
-            success: false,
-            error: {
-              type: "email",
-              message: "This email is already registered.",
-            },
-          });
-        } else {
-          resolve({ success: true });
-        }
-      }, 1000);
-    });
-  };
-
-  // --- UI ---
   return (
     <div className="min-h-screen flex flex-col items-center justify-between bg-white text-gray-900 relative">
       {/* Notification */}
@@ -188,14 +168,27 @@ const SignUp = () => {
             onChange={handleChange}
             error={errors.email}
           />
-          <InputField
-            type="password"
-            placeholder="Password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            error={errors.password}
-          />
+          {/* <span className="relative"> */}
+            <InputField
+              type="password"
+              placeholder="Password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              error={errors.password}
+            />
+            {/* <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700 rounded-full dark:hover:text-gray-300 transition-colors"
+                >
+                {showPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                ) : (
+                    <Eye className="w-5 h-5" />
+                )}
+              </button>
+          </span> */}
           <InputField
             type="password"
             placeholder="Repeat password"

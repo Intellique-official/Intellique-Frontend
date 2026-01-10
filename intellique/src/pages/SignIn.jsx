@@ -127,16 +127,6 @@ const SignIn = () => {
     }
   };
 
-  // === REAL API CALL (Replace mock with this when ready) ===
-  const realAPICall = async (formData) => {
-    return fetch("/api/auth/signin", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(formData),
-    });
-  };
 
   // Handle form submission
   const handleSubmit = async (e) => {
@@ -159,8 +149,13 @@ const SignIn = () => {
       setLoading(true);
       
       // === USE MOCK FOR NOW, REPLACE WITH realAPICall LATER ===
-      const response = await mockSignInAPI(formData);
-      // const response = await realAPICall(formData); // <-- Switch to this when backend is ready
+      fetch("/api/auth/signin", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      })
       
       const data = await response.json();
 
