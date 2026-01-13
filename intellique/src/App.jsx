@@ -5,6 +5,8 @@ import SignUp from "./pages/SignUp"
 import SignIn from "./pages/SignIn"
 import ForgottenPassword from './pages/ForgotPassword'
 import ResetPassword from "./pages/ResetPassword"
+import OTPVerification from "./pages/OTPVerification"
+
 
 function App() {
 
@@ -15,6 +17,7 @@ function App() {
         <Route path="/SignUp" element={<SignUp />}></Route>
         <Route path="/SignIn" element={<SignIn />}></Route>
         <Route path="/forgot-password" element={<ForgottenPassword />}></Route>
+        <Route path="/verification" element={<OTPVerification />}></Route>
         <Route path="/ResetPassword" element={<ResetPassword />}></Route>
       </Routes>
     </BrowserRouter>
