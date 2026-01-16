@@ -46,15 +46,15 @@ const SignIn = () => {
     e.preventDefault();
     
     // Clear previous errors and notifications
-    setErrors({});
-    setNotification({ message: "", type: "" });
+    // setErrors({});
+    // setNotification({ message: "", type: "" });
     
     // Basic validation
     if (!validateForm()) {
-      setNotification({
-        message: "Please fill in all required fields.",
-        type: "error",
-      });
+      // setNotification({
+      //   message: "Please fill in all required fields.",
+      //   type: "error",
+      // });
       return;
     }
 
@@ -76,92 +76,93 @@ const SignIn = () => {
         localStorage.setItem("authToken", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
         
-        setNotification({
-          message: "Successfully signed in! Redirecting...",
-          type: "success",
-        });
+        // setNotification({
+        //   message: "Successfully signed in! Redirecting...",
+        //   type: "success",
+        // });
         
         // Redirect to dashboard or home page
         setTimeout(() => navigate("/dashboard"), 1500);
         
       } else {
         // Handle backend errors
-        handleBackendErrors(data, response.status);
+        // handleBackendErrors(data, response.status);
+        console.log(data)
       }
       
     } catch (error) {
       // Network or unexpected errors
-      setNotification({
-        message: "Unable to connect. Please check your connection.",
-        type: "error",
-      });
+      // setNotification({
+      //   message: "Unable to connect. Please check your connection.",
+      //   type: "error",
+      // });
       console.error("SignIn error:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle backend response errors
+  
   const handleBackendErrors = (errorData, statusCode) => {
-    // Generic error message for security
-    const genericError = "Invalid credentials. Please try again.";
+  //   // Generic error message for security
+  //   const genericError = "Invalid credentials. Please try again.";
     
-    // Handle different error types based on status code
-    switch(statusCode) {
-      case 400:
-        // Validation errors from backend
-        if (errorData.errors) {
-          const backendErrors = {};
-          Object.entries(errorData.errors).forEach(([field, messages]) => {
-            if (field === "email" || field === "password") {
-              backendErrors[field] = Array.isArray(messages) 
-                ? messages[0] 
-                : messages;
-            }
-          });
-          if (Object.keys(backendErrors).length > 0) {
-            setErrors(backendErrors);
-            return;
-          }
-        }
-        break;
+  //   // Handle different error types based on status code
+  //   switch(statusCode) {
+  //     case 400:
+  //       // Validation errors from backend
+  //       if (errorData.errors) {
+  //         const backendErrors = {};
+  //         Object.entries(errorData.errors).forEach(([field, messages]) => {
+  //           if (field === "email" || field === "password") {
+  //             backendErrors[field] = Array.isArray(messages) 
+  //               ? messages[0] 
+  //               : messages;
+  //           }
+  //         });
+  //         if (Object.keys(backendErrors).length > 0) {
+  //           setErrors(backendErrors);
+  //           return;
+  //         }
+  //       }
+  //       break;
         
-      case 401:
-        // Unauthorized - wrong credentials
-        setErrors({
-          password: genericError,
-          email: genericError
-        });
-        return;
+  //     case 401:
+  //       // Unauthorized - wrong credentials
+  //       setErrors({
+  //         password: genericError,
+  //         email: genericError
+  //       });
+  //       return;
         
-      case 403:
-        // Forbidden - email not verified
-        setNotification({
-          message: errorData.message || "Please verify your email address to continue.",
-          type: "warning",
-        });
-        // Optionally navigate to verification page
-        if (errorData.requiresVerification) {
-          setTimeout(() => navigate("/verify-email?email=" + encodeURIComponent(formData.email)), 2000);
-        }
-        return;
+  //     case 403:
+  //       // Forbidden - email not verified
+  //       // setNotification({
+  //       //   message: errorData.message || "Please verify your email address to continue.",
+  //       //   type: "warning",
+  //       // });
+  //       // Optionally navigate to verification page
+  //       if (errorData.requiresVerification) {
+  //         setTimeout(() => navigate("/verify-email?email=" + encodeURIComponent(formData.email)), 2000);
+  //       }
+  //       return;
         
-      case 423:
-        // Account locked
-        setNotification({
-          message: errorData.message || "Account temporarily locked. Please try again later.",
-          type: "error",
-        });
-        return;
+  //     case 423:
+  //       // Account locked
+  //       setNotification({
+  //         message: errorData.message || "Account temporarily locked. Please try again later.",
+  //         type: "error",
+  //       });
+  //       return;
         
-      case 429:
-        // Too many requests
-        setNotification({
-          message: "Too many attempts. Please wait a moment before trying again.",
-          type: "error",
-        });
-        return;
-    }
+  //     case 429:
+  //       // Too many requests
+  //       setNotification({
+  //         message: "Too many attempts. Please wait a moment before trying again.",
+  //         type: "error",
+  //       });
+  //       return;
+  //   }
     
     // Default error handling
     if (errorData.message?.toLowerCase().includes("credentials") || 
@@ -172,10 +173,10 @@ const SignIn = () => {
         email: genericError
       });
     } else {
-      setNotification({
-        message: errorData.message || genericError,
-        type: "error",
-      });
+      // setNotification({
+      //   message: errorData.message || genericError,
+      //   type: "error",
+      // });
     }
   };
 
@@ -195,11 +196,12 @@ const SignIn = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-between bg-white text-gray-900">
       {/* Notification */}
+      {notification.message && 
       <Notification
         message={notification.message}
         type={notification.type}
         onClose={() => setNotification({ message: "", type: "" })}
-      />
+      />}
 
       {/* Header */}
       <header className="w-full bg-black text-white text-center py-4 rounded-b-2xl">

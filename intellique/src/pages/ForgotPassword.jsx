@@ -149,11 +149,12 @@ const ForgotPassword = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-between bg-white text-gray-900">
+      {notification.message && 
       <Notification
         message={notification.message}
         type={notification.type}
         onClose={() => setNotification({ message: "", type: "" })}
-      />
+      />}
 
       <header className="w-full bg-black text-white text-center py-4 rounded-b-2xl">
         <h1 className="text-2xl font-bold">Intellique.</h1>

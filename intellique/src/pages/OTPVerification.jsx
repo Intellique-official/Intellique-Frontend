@@ -1,47 +1,92 @@
-
-
-// src/pages/ForgotPassword.jsx
+// src/pages/ForgotPassword.jsx (Updated)
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import InputField from "../components/InputField";
 import Button from "../components/Button";
 import Footer from "../components/Footer";
 import Notification from "../components/Notification";
+import SingleCharInputs from "../components/SingleCharInputs";
+import axios from "../api/axios";
+import useCountdownTimer from "../hooks/useCountDownTimer";
+import ResendButton from "../components/ResendButton";
 
 const OTPVerification = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [email, setEmail] = useState(searchParams.get("email"));
+  const [email, setEmail] = useState(searchParams.get("email") || "");
   const [error, setError] = useState("");
   const [notification, setNotification] = useState({ message: "", type: "" });
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [requestCount, setRequestCount] = useState(0); // Track requests for rate limiting UI
-  
-  
-  // console.log("Token:", token);     
-  useEffect(() =>{
-    console.log("Email");
-  }, [email])
+  const [OTP, setOTP] = useState("");
+  const [resendLoading, setResendLoading] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 3;
 
-  // Basic email validation
-  const validateEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+  // Initialize countdown timer
+  const {
+    seconds,
+    isActive,
+    isComplete,
+    restart,
+    formattedTime,
+    reset
+  } = useCountdownTimer(60, {
+    autoStart: true,
+    onComplete: () => {
+      setNotification({
+        message: "OTP has expired. Please request a new one.",
+        type: "warning"
+      });
+    },
+    persistKey: "otp-timer",
+    format: 'mm:ss'
+  });
+
+  // Handle resend OTP
+  const handleResendOTP = async () => {
+    if (isActive && !isComplete) return;
+    if (MAX_RETRIES && retryCount >= MAX_RETRIES) {
+      setNotification({
+        message: `Maximum resend attempts (${MAX_RETRIES}) reached. Please try again later.`,
+        type: "error"
+      });
+      return;
+    }
+
+    setResendLoading(true);
+    setError("");
+    
+    try {
+      // Call your API to resend OTP
+      const response = await axios.post("/api/auth/resend-otp", { 
+        email: email || searchParams.get("email") 
+      }, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      // Reset and restart timer
+      restart(60);
+      setRetryCount(prev => prev + 1);
+      
+      setNotification({
+        message: response.data.message || "New OTP has been sent to your email.",
+        type: "success",
+      });
+      
+    } catch (error) {
+      console.error("Resend OTP error:", error);
+      setNotification({
+        message: error.response?.data?.message || "Failed to resend OTP. Please try again.",
+        type: "error",
+      });
+    } finally {
+      setResendLoading(false);
+    }
   };
 
-  
-  // Real API call (when ready)
-  const realAPICall = async (email) => {
-    return fetch("/api/auth/forgot-password", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email }),
-    });
-  };
-
+  // Handle OTP verification
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -49,203 +94,200 @@ const OTPVerification = () => {
     setError("");
     setNotification({ message: "", type: "" });
     
-    // Validate email
-    if (!email.trim()) {
-      setError("Email is required");
+    // Validate OTP
+    if (!OTP || OTP.length !== 6) {
+      setError("Please enter the complete 6-digit code");
       return;
     }
-    
-    if (!validateEmail(email)) {
-      setError("Please enter a valid email address");
+
+    // Validate OTP hasn't expired
+    if (isComplete) {
+      setError("OTP has expired. Please request a new one.");
       return;
     }
 
     try {
       setLoading(true);
-      setRequestCount(prev => prev + 1);
       
-      // Use mock for now
-      // const response = await mockRequestReset(email);
-      const response = await realAPICall(email); // Switch to this later
-      
-      const data = await response.json();
+      const response = await axios.post("/api/auth/verify-otp", 
+        { 
+          email: email || searchParams.get("email"),
+          otp: OTP 
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-      if (response.ok) {
-        setSuccess(true);
-        setNotification({
-          message: data.message || "If an account exists, you'll receive reset instructions shortly.",
-          type: "success",
-        });
-        
-        // Clear form after success
-        setEmail("");
-        
-        // Auto-redirect to login after 5 seconds
-        // setTimeout(() => {
-        //   navigate("/signin");
-        // }, 10000);
-        
-      } else {
-        // Handle errors
-        handleErrorResponse(data, response.status);
-      }
+      setNotification({
+        message: response.data.message || "Email verified successfully!",
+        type: "success",
+      });
+      
+      // Clear OTP input
+      setOTP("");
+      
+      // Navigate to password reset page or dashboard
+      setTimeout(() => {
+        navigate("/reset-password", { state: { email: email || searchParams.get("email") } });
+      }, 1500);
       
     } catch (error) {
-      console.error("Forgot password error:", error);
+      console.error("OTP verification error:", error);
+      
+      let errorMessage = "Unable to verify OTP. Please try again.";
+      
+      if (error.response?.status === 400) {
+        errorMessage = error.response.data?.message || "Invalid OTP. Please check and try again.";
+      } else if (error.response?.status === 410) {
+        errorMessage = "OTP has expired. Please request a new one.";
+        restart(0); // Force timer to complete
+      }
+      
       setNotification({
-        message: "Unable to process request. Please try again.",
+        message: errorMessage,
         type: "error",
       });
+      
+      // Clear OTP on error (optional)
+      // setOTP("");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleErrorResponse = (errorData, status) => {
-    switch(status) {
-      case 429: // Rate limited
-        setNotification({
-          message: errorData.message || "Too many attempts. Please wait before trying again.",
-          type: "error",
-        });
-        break;
-        
-      case 400: // Bad request
-        setError(errorData.errors?.email?.[0] || "Invalid email format");
-        break;
-        
-      default:
-        // Generic error - never reveal if email exists
-        setNotification({
-          message: "If an account exists, you'll receive reset instructions shortly.",
-          type: "info", // Show as info, not error, for security
-        });
-        setSuccess(true); // Still show success UI for security
+  // Clear notification after 5 seconds
+  useEffect(() => {
+    if (notification.message) {
+      const timer = setTimeout(() => {
+        setNotification({ message: "", type: "" });
+      }, 5000);
+      return () => clearTimeout(timer);
     }
-  };
+  }, [notification]);
+
+  // Initialize timer when component mounts
+  useEffect(() => {
+    // If email is in URL params, we assume OTP was already sent
+    if (searchParams.get("email")) {
+      setEmail(searchParams.get("email"));
+    }
+  }, [searchParams]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-between bg-white text-gray-900">
-      <Notification
-        message={notification.message}
-        type={notification.type}
-        onClose={() => setNotification({ message: "", type: "" })}
-      />
+      {notification.message && 
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification({ message: "", type: "" })}
+        />
+      }
 
       <header className="w-full bg-black text-white text-center py-4 rounded-b-2xl">
         <h1 className="text-2xl font-bold">Intellique.</h1>
       </header>
 
       <div className="w-11/12 max-w-md mt-8">
-        {success ? (
-          // Success State
-          <div className="bg-green-50 border border-green-200 rounded-2xl p-8 text-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-              </svg>
+        <form
+          onSubmit={handleSubmit}
+          className="bg-green-50 border border-green-200 rounded-2xl p-6 shadow-sm"
+        >
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            Verify Your Email
+          </h2>
+          
+          {email && (
+            <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+              <p className="text-sm text-blue-800">
+                OTP sent to: <span className="font-medium">{email}</span>
+              </p>
             </div>
-            
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              Check Your Email
-            </h2>
-            
-            <p className="text-gray-700 mb-6">
-              If an account exists with {email}, you'll receive password reset instructions shortly.
-            </p>
-            
-            <div className="space-y-4">
-              <div className="bg-yellow-50 border border-yellow-100 rounded-lg p-4 text-sm text-yellow-800">
-                <p className="font-semibold mb-1">📧 Check your spam folder</p>
-                <p>Sometimes emails end up there by mistake.</p>
-              </div>
+          )}
+          
+          <p className="text-gray-600 mb-6">
+            Enter the 6-digit code that was sent to your email address.
+          </p>
+          
+          <SingleCharInputs 
+            setOTP={setOTP}
+            error={error}
+            setError={setError}  />
+          
+          {/* Timer Display */}
+          <div className="flex justify-between items-center bg-blue-50 border border-blue-100 rounded-lg p-4 mb-6">
+            <div className="flex-1">
+              <p className="text-blue-800 font-medium">
+                {isActive && !isComplete ? (
+                  <>
+                    OTP expires in:{" "}
+                    <span className="font-mono text-lg">
+                      {formattedTime.display}
+                    </span>
+                  </>
+                ) : isComplete ? (
+                  <span className="text-red-600">OTP has expired</span>
+                ) : (
+                  "Ready to request new OTP"
+                )}
+              </p>
               
-              <div className="text-sm text-gray-600">
-                <p>Didn't receive an email?</p>
-                <button
-                  onClick={() => {
-                    setSuccess(false);
-                    setNotification({ message: "", type: "" });
-                  }}
-                  className="text-blue-600 hover:text-blue-800 font-medium mt-1"
-                  disabled={loading}
-                >
-                  Try again in 2 minutes
-                </button>
-              </div>
+              {MAX_RETRIES && retryCount > 0 && (
+                <p className="text-xs text-blue-600 mt-1">
+                  Attempts: {retryCount}/{MAX_RETRIES}
+                </p>
+              )}
             </div>
             
-            <div className="mt-8 pt-6 border-t border-gray-200">
+            <div className="ml-4">
+              <ResendButton
+                onResend={handleResendOTP}
+                isActive={isActive}
+                isComplete={isComplete}
+                formattedTime={formattedTime}
+                isLoading={resendLoading}
+                maxRetries={MAX_RETRIES}
+                retryCount={retryCount}
+                buttonText="Resend OTP"
+                className="text-sm"
+              />
+            </div>
+          </div>
+          
+          {/* Security Note */}
+          <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-6">
+            <div className="flex items-start">
+              <svg className="w-5 h-5 text-blue-600 mt-0.5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <p className="text-sm text-blue-800">
+                  For security reasons, each OTP is valid for 1 minute and can be requested up to {MAX_RETRIES} times.
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            <Button
+              type="submit"
+              disabled={loading || !OTP || OTP.length !== 6 || isComplete}
+              text={loading ? "Verifying..." : "Verify OTP"}
+              fullWidth
+            />
+            
+            <div className="text-center">
               <Link
-                to="/signin"
-                className="text-blue-600 hover:text-blue-800 font-medium"
+                to="/forgot-password"
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
               >
-                ← Back to Sign In
+                Need to change email?
               </Link>
             </div>
           </div>
-        ) : (
-          // OTP Verification
-          <form
-            onSubmit={handleSubmit}
-            className="bg-green-50 border border-green-200 rounded-2xl p-6 shadow-sm"
-          >
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Verify Your Email
-            </h2>
-            
-            <p className="text-gray-600 mb-6">
-              Enter your the 6 digit code that was sent to your email address.
-            </p>
-            
-            <div className="mb-6">
-              <InputField
-                className="size-7"
-                type="password"
-                placeholder="Enter your OTP"
-                name="password"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                error={error}
-                disabled={loading}
-                autoComplete="none"
-              />
-            </div>
-            
-            {/* Security Note */}
-            <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-6">
-              <div className="flex items-start">
-                <svg className="w-5 h-5 text-blue-600 mt-0.5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <div>
-                  <p className="text-sm text-blue-800">
-                    For security reasons, we don't reveal whether an email address is registered.
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <Button
-                type="submit"
-                disabled={loading || requestCount >= 3}
-                text={loading ? "Verifying..." : "Verify"}
-                fullWidth
-              />
-              
-              {/* <div className="text-center">
-                <Link
-                  to="/signin"
-                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                >
-                  Remember your password? Sign in
-                </Link>
-              </div> */}
-            </div>
-            
-          </form>
-        )}
+        </form>
       </div>
 
       <Footer />

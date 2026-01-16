@@ -131,11 +131,12 @@ const SignUp = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-between bg-white text-gray-900 relative">
       {/* Notification */}
+      {notification.message && 
       <Notification
         message={notification.message}
         type={notification.type}
         onClose={() => setNotification({ message: "", type: "" })}
-      />
+      />}
 
       {/* Header */}
       <header className="w-full bg-black text-white text-center py-4 rounded-b-2xl">
